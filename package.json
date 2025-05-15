@@ -4,23 +4,25 @@
   "description": "",
   "main": "main.js",
   "build": {
-  "appId": "com.yourname.projectexporter",
-  "productName": "Project Structure Exporter",
-  "files": [
-    "**/*"
-  ],
-  "directories": {
-    "output": "dist"
+    "appId": "com.yourname.projectexporter",
+    "productName": "Project Structure Exporter",
+    "files": [
+      "**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "forceCodeSigning": false
   },
-  "win": {
-    "target": "nsis",
-    "icon": "icon.ico"
-  }
-},
   "scripts": {
-  "start": "electron .",
-  "build": "electron-builder"
-},
+    "start": "electron .",
+    "clean": "rimraf dist",
+    "build": "npm run clean && electron-builder"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/MalAndHisCode/project-structure-exporter.git"
@@ -34,6 +36,7 @@
   "homepage": "https://github.com/MalAndHisCode/project-structure-exporter#readme",
   "devDependencies": {
     "electron": "^36.2.1",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "^26.0.12",
+    "rimraf": "^6.0.1"
   }
 }
