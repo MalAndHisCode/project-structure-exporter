@@ -1,42 +1,77 @@
+// Elements
+const folderInput = document.getElementById("folderPath");
+const fileNameInput = document.getElementById("outputFileName");
+const previewPane = document.getElementById("previewPane");
+const settingsPanel = document.getElementById("settingsPanel");
+const extensionsInput = document.getElementById("extensionsInput");
+
+// 📁 Browse for Folder
 document.getElementById("chooseFolder").addEventListener("click", async () => {
   const folderPath = await window.electronAPI.chooseFolder();
-  if (folderPath) {
-    document.getElementById("folderPath").value = folderPath;
-  }
+  if (folderPath) folderInput.value = folderPath;
 });
 
-function renderTree(data, indent = "") {
-  let output = "";
-  for (const item of data) {
-    if (item.type === "folder") {
-      output += `${indent}├── ${item.name}/\n`;
-      output += renderTree(item.children, indent + "│   ");
-    } else {
-      output += `${indent}├── ${item.name}\n`;
-    }
-  }
-  return output;
-}
+// ⚙ Open Settings Panel
+document.getElementById("openSettings").addEventListener("click", async () => {
+  const settings = await window.electronAPI.getSettings();
+  extensionsInput.value = settings.extensions.join(", ");
+  settingsPanel.classList.remove("hidden");
+});
 
+// 💾 Save Settings
+document.getElementById("saveSettings").addEventListener("click", async () => {
+  const exts = extensionsInput.value
+    .split(",")
+    .map((e) => e.trim())
+    .filter((e) => e.startsWith("."));
+
+  await window.electronAPI.saveSettings({ extensions: exts });
+  settingsPanel.classList.add("hidden");
+  alert("Settings saved!");
+});
+
+// ❌ Close Settings Panel
+document.getElementById("closeSettings").addEventListener("click", () => {
+  settingsPanel.classList.add("hidden");
+});
+
+// 📦 Generate Preview + Export
 document.getElementById("generate").addEventListener("click", async () => {
-  const folderPath = document.getElementById("folderPath").value;
+  const folderPath = folderInput.value;
+  const outputFileName = fileNameInput.value || "project-summary.txt";
   if (!folderPath) return alert("Please select a folder first.");
 
   const { tree, contents } = await window.electronAPI.scanFolderTree(
     folderPath
   );
 
-  let output = `Project Tree:\n${renderTree(tree)}\n\n`;
+  // Format Tree Section
+  const renderTree = (nodes, indent = "") => {
+    return nodes
+      .map((node) => {
+        if (node.type === "folder") {
+          return `${indent}├── ${node.name}/\n${renderTree(
+            node.children,
+            indent + "│   "
+          )}`;
+        } else {
+          return `${indent}├── ${node.name}`;
+        }
+      })
+      .join("\n");
+  };
 
-  output += `File Contents:\n`;
+  let output = `Project Tree:\n${renderTree(tree)}\n\nFile Contents:\n`;
+
+  // Format File Contents Section
   for (const file of contents) {
     output += `${file.fileName}:\n// ${file.relativePath}\n${file.content}\n\n`;
   }
 
-  // Show in preview
-  document.getElementById("previewPane").textContent = output.trim();
+  // Update Preview
+  previewPane.textContent = output.trim();
 
-  // Export to file
+  // Prompt to Save File
   const filePath = await window.electronAPI.saveOutput(output.trim());
   if (filePath) alert(`Exported to:\n${filePath}`);
 });

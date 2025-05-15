@@ -1,10 +1,22 @@
 {
   "name": "project-structure-exporter",
   "version": "1.0.0",
-  "description": "",
+  "description": "A cross-platform Electron app that exports a project's folder tree and source file contents to a clean .txt file.",
   "main": "main.js",
+  "author": "Malcolm Kawooya",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "electron": "^26.2.1",
+    "electron-builder": "^26.0.0",
+    "rimraf": "^5.0.1"
+  },
   "build": {
-    "appId": "com.yourname.projectexporter",
+    "appId": "com.malandhiscode.projectexporter",
     "productName": "Project Structure Exporter",
     "files": [
       "**/*"
@@ -13,30 +25,9 @@
       "output": "dist"
     },
     "win": {
-      "target": "nsis",
-      "icon": "icon.ico"
+      "target": "nsis"
     },
+    "icon": "icon.ico",
     "forceCodeSigning": false
-  },
-  "scripts": {
-    "start": "electron .",
-    "clean": "rimraf dist",
-    "build": "npm run clean && electron-builder"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/MalAndHisCode/project-structure-exporter.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/MalAndHisCode/project-structure-exporter/issues"
-  },
-  "homepage": "https://github.com/MalAndHisCode/project-structure-exporter#readme",
-  "devDependencies": {
-    "electron": "^36.2.1",
-    "electron-builder": "^26.0.12",
-    "rimraf": "^6.0.1"
   }
 }

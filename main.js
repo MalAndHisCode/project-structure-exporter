@@ -1,6 +1,21 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
+const fs = require("fs");
 
+// 🔧 Constants
+const defaultExcludeDirs = [
+  "node_modules",
+  ".git",
+  "dist",
+  "build",
+  "coverage",
+  ".next",
+  ".turbo",
+  ".cache",
+];
+const settingsPath = path.join(app.getPath("userData"), "settings.json");
+
+// 🪟 Create Main Window
 function createWindow() {
   const win = new BrowserWindow({
     width: 1000,
@@ -13,47 +28,36 @@ function createWindow() {
   win.loadFile("index.html");
 }
 
-const { ipcMain, dialog } = require("electron");
+// ⚙ Load user settings or defaults
+function loadSettings() {
+  try {
+    return JSON.parse(fs.readFileSync(settingsPath, "utf-8"));
+  } catch {
+    return {
+      extensions: [
+        ".js",
+        ".ts",
+        ".jsx",
+        ".tsx",
+        ".json",
+        ".env",
+        ".html",
+        ".css",
+        ".md",
+        ".yml",
+        ".yaml",
+        ".sh",
+        ".py",
+      ],
+    };
+  }
+}
 
-ipcMain.handle("dialog:openFolder", async () => {
-  const result = await dialog.showOpenDialog({
-    properties: ["openDirectory"],
-  });
+function saveSettings(newSettings) {
+  fs.writeFileSync(settingsPath, JSON.stringify(newSettings, null, 2));
+}
 
-  if (result.canceled) return null;
-  return result.filePaths[0];
-});
-
-const fs = require("fs");
-
-const defaultExcludeDirs = [
-  "node_modules",
-  ".git",
-  "dist",
-  "build",
-  "coverage",
-  ".next",
-  ".turbo",
-  ".cache",
-];
-
-const allowedExtensions = [
-  ".js",
-  ".ts",
-  ".jsx",
-  ".tsx",
-  ".json",
-  ".env",
-  ".html",
-  ".css",
-  ".md",
-  ".yml",
-  ".yaml",
-  ".sh",
-  ".py",
-];
-
-// Recursive folder scan
+// 📂 Recursive Folder Scanner
 function scanFolderTree(dir, extensions, base = dir) {
   const items = [];
 
@@ -65,7 +69,6 @@ function scanFolderTree(dir, extensions, base = dir) {
 
     if (entry.isDirectory()) {
       if (defaultExcludeDirs.includes(entry.name)) continue;
-
       const children = scanFolderTree(fullPath, extensions, base);
       items.push({ type: "folder", name: entry.name, children });
     } else if (entry.isFile()) {
@@ -79,55 +82,53 @@ function scanFolderTree(dir, extensions, base = dir) {
   return items;
 }
 
+// 📄 Read & Clean File Contents
 function getFileContents(fileList, baseDir) {
-  const contents = [];
-
-  for (const file of fileList) {
+  return fileList.map((file) => {
     const fullPath = path.join(baseDir, file.path);
-    let raw = fs.readFileSync(fullPath, "utf-8");
-
-    // Remove blank lines
-    raw = raw
+    const raw = fs.readFileSync(fullPath, "utf-8");
+    const cleaned = raw
       .split("\n")
       .filter((line) => line.trim() !== "")
       .join("\n");
-
-    contents.push({
+    return {
       fileName: file.name,
       relativePath: file.path,
-      content: raw,
-    });
-  }
-
-  return contents;
+      content: cleaned,
+    };
+  });
 }
 
+// 📦 Handle Folder Scan + File Read
 ipcMain.handle("scan:folderTree", async (event, folderPath) => {
-  const settings = loadSettings(); // 🔹 Load custom extensions
+  const settings = loadSettings();
   const extensions = settings.extensions;
 
-  const tree = scanFolderTree(folderPath, extensions); // base is auto-set
-  // 🔹 Pass to tree scan
+  const tree = scanFolderTree(folderPath, extensions);
 
-  // Flatten files from tree
-  function collectFiles(nodes) {
-    let files = [];
-    for (const node of nodes) {
-      if (node.type === "file") {
-        files.push(node);
-      } else if (node.children) {
-        files = files.concat(collectFiles(node.children));
-      }
-    }
-    return files;
+  function flattenFiles(nodes) {
+    return nodes.flatMap((node) =>
+      node.type === "file"
+        ? [node]
+        : node.children
+        ? flattenFiles(node.children)
+        : []
+    );
   }
 
-  const flatFiles = collectFiles(tree);
-  const contents = getFileContents(flatFiles, folderPath); // file reading stays the same
+  const flatFiles = flattenFiles(tree);
+  const contents = getFileContents(flatFiles, folderPath);
 
   return { tree, contents };
 });
 
+// 📁 Folder Picker
+ipcMain.handle("dialog:openFolder", async () => {
+  const result = await dialog.showOpenDialog({ properties: ["openDirectory"] });
+  return result.canceled ? null : result.filePaths[0];
+});
+
+// 💾 Export Output
 ipcMain.handle("save:output", async (event, content) => {
   const { filePath, canceled } = await dialog.showSaveDialog({
     title: "Save Project Summary",
@@ -135,36 +136,17 @@ ipcMain.handle("save:output", async (event, content) => {
     filters: [{ name: "Text Files", extensions: ["txt"] }],
   });
 
-  if (canceled || !filePath) return null;
-
+  if (!filePath || canceled) return null;
   fs.writeFileSync(filePath, content, "utf-8");
   return filePath;
 });
 
-const settingsPath = path.join(app.getPath("userData"), "settings.json");
+// ⚙ Settings Handlers
+ipcMain.handle("settings:get", () => loadSettings());
+ipcMain.handle("settings:save", (event, settings) => saveSettings(settings));
 
-function loadSettings() {
-  try {
-    return JSON.parse(fs.readFileSync(settingsPath, "utf-8"));
-  } catch {
-    return { extensions: allowedExtensions }; // fallback to default
-  }
-}
-
-function saveSettings(newSettings) {
-  fs.writeFileSync(settingsPath, JSON.stringify(newSettings, null, 2));
-}
-
-ipcMain.handle("settings:get", () => {
-  return loadSettings();
-});
-
-ipcMain.handle("settings:save", (event, settings) => {
-  saveSettings(settings);
-});
-
+// 🚀 Launch App
 app.whenReady().then(createWindow);
-
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
