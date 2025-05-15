@@ -1,11 +1,34 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Project Exporter</title>
+    <meta charset="UTF-8" />
+    <title>Project Structure Exporter</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <h1>Welcome to Project Exporter</h1>
+    <h1>📁 Project Structure Exporter</h1>
+
+    <div class="controls">
+      <label>
+        Select Project Folder:
+        <input type="text" id="folderPath" readonly />
+        <button id="chooseFolder">Browse</button>
+      </label>
+
+      <label>
+        Output File Name:
+        <input type="text" id="outputFileName" value="project-summary.txt" />
+      </label>
+
+      <button id="openSettings">⚙ Settings</button>
+      <button id="generate">Generate & Export</button>
+    </div>
+
+    <div class="preview">
+      <h2>📄 Preview</h2>
+      <pre id="previewPane">(Preview will appear here)</pre>
+    </div>
+
     <script src="renderer.js"></script>
   </body>
 </html>
