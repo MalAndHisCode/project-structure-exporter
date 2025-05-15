@@ -34,4 +34,32 @@ document.getElementById("generate").addEventListener("click", async () => {
   }
 
   document.getElementById("previewPane").textContent = preview.trim();
+
+  const settingsPanel = document.getElementById("settingsPanel");
+  const extensionsInput = document.getElementById("extensionsInput");
+
+  document
+    .getElementById("openSettings")
+    .addEventListener("click", async () => {
+      const settings = await window.electronAPI.getSettings();
+      extensionsInput.value = settings.extensions.join(", ");
+      settingsPanel.classList.remove("hidden");
+    });
+
+  document.getElementById("closeSettings").addEventListener("click", () => {
+    settingsPanel.classList.add("hidden");
+  });
+
+  document
+    .getElementById("saveSettings")
+    .addEventListener("click", async () => {
+      const exts = extensionsInput.value
+        .split(",")
+        .map((e) => e.trim())
+        .filter((e) => e.startsWith("."));
+
+      await window.electronAPI.saveSettings({ extensions: exts });
+      settingsPanel.classList.add("hidden");
+      alert("Settings saved!");
+    });
 });

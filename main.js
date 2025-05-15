@@ -54,7 +54,7 @@ const allowedExtensions = [
 ];
 
 // Recursive folder scan
-function scanFolderTree(dir, base = dir) {
+function scanFolderTree(dir, extensions, base = dir) {
   const items = [];
 
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -66,11 +66,11 @@ function scanFolderTree(dir, base = dir) {
     if (entry.isDirectory()) {
       if (defaultExcludeDirs.includes(entry.name)) continue;
 
-      const children = scanFolderTree(fullPath, base);
+      const children = scanFolderTree(fullPath, extensions, base);
       items.push({ type: "folder", name: entry.name, children });
     } else if (entry.isFile()) {
       const ext = path.extname(entry.name);
-      if (allowedExtensions.includes(ext)) {
+      if (extensions.includes(ext)) {
         items.push({ type: "file", name: entry.name, path: relativePath });
       }
     }
@@ -103,7 +103,11 @@ function getFileContents(fileList, baseDir) {
 }
 
 ipcMain.handle("scan:folderTree", async (event, folderPath) => {
-  const tree = scanFolderTree(folderPath);
+  const settings = loadSettings(); // 🔹 Load custom extensions
+  const extensions = settings.extensions;
+
+  const tree = scanFolderTree(folderPath, extensions); // base is auto-set
+  // 🔹 Pass to tree scan
 
   // Flatten files from tree
   function collectFiles(nodes) {
@@ -119,9 +123,31 @@ ipcMain.handle("scan:folderTree", async (event, folderPath) => {
   }
 
   const flatFiles = collectFiles(tree);
-  const contents = getFileContents(flatFiles, folderPath);
+  const contents = getFileContents(flatFiles, folderPath); // file reading stays the same
 
   return { tree, contents };
+});
+
+const settingsPath = path.join(app.getPath("userData"), "settings.json");
+
+function loadSettings() {
+  try {
+    return JSON.parse(fs.readFileSync(settingsPath, "utf-8"));
+  } catch {
+    return { extensions: allowedExtensions }; // fallback to default
+  }
+}
+
+function saveSettings(newSettings) {
+  fs.writeFileSync(settingsPath, JSON.stringify(newSettings, null, 2));
+}
+
+ipcMain.handle("settings:get", () => {
+  return loadSettings();
+});
+
+ipcMain.handle("settings:save", (event, settings) => {
+  saveSettings(settings);
 });
 
 app.whenReady().then(createWindow);
