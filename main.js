@@ -79,8 +79,49 @@ function scanFolderTree(dir, base = dir) {
   return items;
 }
 
+function getFileContents(fileList, baseDir) {
+  const contents = [];
+
+  for (const file of fileList) {
+    const fullPath = path.join(baseDir, file.path);
+    let raw = fs.readFileSync(fullPath, "utf-8");
+
+    // Remove blank lines
+    raw = raw
+      .split("\n")
+      .filter((line) => line.trim() !== "")
+      .join("\n");
+
+    contents.push({
+      fileName: file.name,
+      relativePath: file.path,
+      content: raw,
+    });
+  }
+
+  return contents;
+}
+
 ipcMain.handle("scan:folderTree", async (event, folderPath) => {
-  return scanFolderTree(folderPath);
+  const tree = scanFolderTree(folderPath);
+
+  // Flatten files from tree
+  function collectFiles(nodes) {
+    let files = [];
+    for (const node of nodes) {
+      if (node.type === "file") {
+        files.push(node);
+      } else if (node.children) {
+        files = files.concat(collectFiles(node.children));
+      }
+    }
+    return files;
+  }
+
+  const flatFiles = collectFiles(tree);
+  const contents = getFileContents(flatFiles, folderPath);
+
+  return { tree, contents };
 });
 
 app.whenReady().then(createWindow);

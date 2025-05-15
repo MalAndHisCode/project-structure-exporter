@@ -22,7 +22,16 @@ document.getElementById("generate").addEventListener("click", async () => {
   const folderPath = document.getElementById("folderPath").value;
   if (!folderPath) return alert("Please select a folder first.");
 
-  const tree = await window.electronAPI.scanFolderTree(folderPath);
-  const preview = `Project Tree:\n${renderTree(tree)}`;
-  document.getElementById("previewPane").textContent = preview;
+  const { tree, contents } = await window.electronAPI.scanFolderTree(
+    folderPath
+  );
+
+  let preview = `Project Tree:\n${renderTree(tree)}\n\n`;
+
+  preview += `File Contents:\n`;
+  for (const file of contents) {
+    preview += `${file.fileName}:\n// ${file.relativePath}\n${file.content}\n\n`;
+  }
+
+  document.getElementById("previewPane").textContent = preview.trim();
 });
