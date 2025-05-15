@@ -26,40 +26,17 @@ document.getElementById("generate").addEventListener("click", async () => {
     folderPath
   );
 
-  let preview = `Project Tree:\n${renderTree(tree)}\n\n`;
+  let output = `Project Tree:\n${renderTree(tree)}\n\n`;
 
-  preview += `File Contents:\n`;
+  output += `File Contents:\n`;
   for (const file of contents) {
-    preview += `${file.fileName}:\n// ${file.relativePath}\n${file.content}\n\n`;
+    output += `${file.fileName}:\n// ${file.relativePath}\n${file.content}\n\n`;
   }
 
-  document.getElementById("previewPane").textContent = preview.trim();
+  // Show in preview
+  document.getElementById("previewPane").textContent = output.trim();
 
-  const settingsPanel = document.getElementById("settingsPanel");
-  const extensionsInput = document.getElementById("extensionsInput");
-
-  document
-    .getElementById("openSettings")
-    .addEventListener("click", async () => {
-      const settings = await window.electronAPI.getSettings();
-      extensionsInput.value = settings.extensions.join(", ");
-      settingsPanel.classList.remove("hidden");
-    });
-
-  document.getElementById("closeSettings").addEventListener("click", () => {
-    settingsPanel.classList.add("hidden");
-  });
-
-  document
-    .getElementById("saveSettings")
-    .addEventListener("click", async () => {
-      const exts = extensionsInput.value
-        .split(",")
-        .map((e) => e.trim())
-        .filter((e) => e.startsWith("."));
-
-      await window.electronAPI.saveSettings({ extensions: exts });
-      settingsPanel.classList.add("hidden");
-      alert("Settings saved!");
-    });
+  // Export to file
+  const filePath = await window.electronAPI.saveOutput(output.trim());
+  if (filePath) alert(`Exported to:\n${filePath}`);
 });

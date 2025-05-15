@@ -6,4 +6,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("scan:folderTree", folderPath),
   getSettings: () => ipcRenderer.invoke("settings:get"),
   saveSettings: (settings) => ipcRenderer.invoke("settings:save", settings),
+  saveOutput: (content) => ipcRenderer.invoke("save:output", content),
 });

@@ -128,6 +128,19 @@ ipcMain.handle("scan:folderTree", async (event, folderPath) => {
   return { tree, contents };
 });
 
+ipcMain.handle("save:output", async (event, content) => {
+  const { filePath, canceled } = await dialog.showSaveDialog({
+    title: "Save Project Summary",
+    defaultPath: "project-summary.txt",
+    filters: [{ name: "Text Files", extensions: ["txt"] }],
+  });
+
+  if (canceled || !filePath) return null;
+
+  fs.writeFileSync(filePath, content, "utf-8");
+  return filePath;
+});
+
 const settingsPath = path.join(app.getPath("userData"), "settings.json");
 
 function loadSettings() {
