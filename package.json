@@ -1,0 +1,24 @@
+{
+  "name": "project-structure-exporter",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MalAndHisCode/project-structure-exporter.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MalAndHisCode/project-structure-exporter/issues"
+  },
+  "homepage": "https://github.com/MalAndHisCode/project-structure-exporter#readme",
+  "devDependencies": {
+    "electron": "^36.2.1"
+  }
+}
